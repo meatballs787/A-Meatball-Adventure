@@ -53,6 +53,10 @@ class meatball():
         delay(1500)
     def gain_experience(self, amount):
         self.experience += amount
+        print(f"{self.name} gained {amount} experience!")
+        delay(1500)
+        print(f"{self.name}'s Experience: {self.experience}/{(self.level + 1) * 10}")
+        delay(1500)
         if self.experience >= (self.level + 1) * 10:
             self.experience -= (self.level + 1) * 10
             self.level_up()
@@ -86,12 +90,13 @@ class meatball():
             self.magic_mince -= amount
             return True
 class Enemy:
-    def __init__(self, strength, hp, defense, experience_reward):
+    def __init__(self, strength, hp, defense, experience_reward, mince_reward):
         self.strength = strength
         self.max_hp = hp
         self.hp = hp
         self.defense = defense
         self.experience_reward = experience_reward
+        self.mince_reward = mince_reward
     def take_damage(self, amount):
         self.hp -= amount
         if self.hp <= 0:
@@ -103,16 +108,22 @@ class Enemy:
 
 class toothpick(Enemy):
     def __init__(self):
-        super().__init__(strength=3, hp=10, defense=1, experience_reward=5)
+        super().__init__(strength=3, hp=10, defense=1, experience_reward=5, mince_reward=2)
         self.name = "Toothpick"
     def poke(self):
         print("The toothpick pokes you with its sharp end!")
+    def die(self):
+        print("The toothpick snaps in half.")
+        delay(1500)
+        super().die()
+        
 
 
 
 class MainLoop:
     def __init__(self, player):
         self.player = player
+        self.escape = False
     def openEnhanceMenu(self):
         while True:
             print("-----Enhancement Menu-----")
@@ -134,11 +145,14 @@ class MainLoop:
             choice = input()
             delay(1500)
 
-            print("How much magic mince do you want to spend? 1 mince = +1 to stat")
+            print("How much magic mince do you want to spend? 1 mince = +1 to strength and defense, +3 to max HP")
             print(f"Magic Mince Available: {self.player.magic_mince}")
             delay(500)
             amount = int(input())
             delay(1500)
+            if choice == "4":
+                print("Exiting Enhancement Menu.")
+                break
             
             if self.player.spend_magic_mince(amount):
                 if choice == "1":
@@ -152,12 +166,9 @@ class MainLoop:
                     delay(2000)
                     break
                 elif choice == "3":
-                    self.player.max_hp += amount
-                    print(f"Max HP increased by {amount}!")
-                    delay(2000)
-                    break
-                elif choice == "4":
-                    print("Exiting Enhancement Menu.")
+                    self.player.max_hp += 3*amount
+                    self.player.hp += 3*amount
+                    print(f"Max HP increased by {3*amount}!")
                     delay(2000)
                     break
                 else:
@@ -168,7 +179,7 @@ class MainLoop:
                 delay(2000)
     def actionMenu(self, enemy):
         while True:
-            print("|/|-- Attack Menu --|/|")
+            print("|/|-- Action Menu --|/|")
             delay(500)
             print(f"{self.player.name}'s Mince: {self.player.mince}")
             delay(500)
@@ -189,8 +200,16 @@ class MainLoop:
                 self.player.restore_HP(amount)
                 break
             elif choice == "3":
-                print("Escape is not implemented yet.")
+                print(f"{self.player.name} attempts to escape...")
                 delay(1000)
+                if random.random()+enemy.strength*.011 < 0.8:
+                    self.escape=True
+                    print("Escape successful!")
+                    delay(1000)
+                else:
+                    print("Escape failed!")
+                    delay(1000)
+                break
             else:
                 print("invalid choice")
                 delay(1000)
@@ -218,23 +237,50 @@ class MainLoop:
                 delay(1000)
 
     def fight(self, enemy) :
-        while enemy.hp > 0 and self.player.hp > 0:
+        while enemy.hp > 0 and self.player.hp > 0 and not self.escape:
             attack(enemy, self.player)
             delay(2000)
             print(f"{self.player.name}'s HP: {round(self.player.hp,1)}/{self.player.max_hp}")
             delay(1500)
             self.actionMenu(enemy)
+        if enemy.hp <= 0:
+            self.player.gain_experience(enemy.experience_reward)
+        self.escape = False
 
-            
+    def NeutMenu(self):
+        while True:
+            print("-----Main Menu-----")
+            print("1. Enhance Stats")
+            print("2. Enter into Hostile Territories")
+            choice = input()
+            if choice == "1":
+                self.openEnhanceMenu()
+                break
+            elif choice == "2":
+                self.HostileTerritories()
+
+    def HostileTerritories(self):
+        print("-----Hostile Territories-----")
+        print("DL = Danger Level")
+        print("1. Isle of Toothpicks. Contains Toothpicks(DL:1) and Skewers(DL:2)")
+        print("2. Sauce Swamps. Contains Sauce Throwers(DL:3) and Spoons(DL:5)")
+        print("3. Pasta Plains. Contains Spaghetti Wranglers(DL:6) and Rigatoni Trappers(DL:8)")
+        print("4. Edge of the World. Contains Steely Forks(DL:10) and The Hands(DL:10)")
+        print("5. Return to Main Menu")
+        print("Choose your destination:")
+        choice = input()
+        delay(1000)
+        print("This area is under construction. Returning to Main Menu.")
+        delay(2000)
             
     def start(self):
-        print(f"It has been 50 years since the invasion of the hands. Hands came from the sky with steely forks, sharp skewers, jars of hot\nalfredo sauce, and dense nets of spaghetti. \n")
-        delay(2000)
+        print(f"It has been 50 years since the invasion of the hands. \nHands came from the sky with steely forks, sharp skewers, jars of hot alfredo sauce, and dense nets of spaghetti. \n")
+        delay(3000)
         print(
             f"The rest of {self.player.name}'s family were imprisoned in the world of pasta,\n"
             f"and {self.player.name} has been left alone to fend for themselves.\n"
         )
-        delay(2000)
+        delay(3000)
         print(
             f"One day, while scavenging for food, {self.player.name} stumbles upon a mysterious glowing pile of minced meat.\n"
         )
@@ -244,7 +290,7 @@ class MainLoop:
         delay(1500)
         if eatchoice == "2":
             print("this time your choice doesn't matter. You are eating the meat anyway.")
-        delay(1500)
+        delay(2000)
         self.player.gain_magic_mince(1)
         print(f"when {self.player.name} consumes magical mince, stats of their choosing are enhanced")
         delay(1500)
@@ -262,11 +308,21 @@ class MainLoop:
         delay(1500)
         enemy = toothpick()
         self.fight(enemy)
+        print("Good job on winning your first fight! a Toothpick is the weakest enemy you'll face so be prepared.")
+        delay(2000)
+        print("Don't take stupid risks, because once you die, your meatball is dead forever.")
+        delay(2000)
+        print("Now, go forth and escape the clutches of the Hands!")
 
+    def mainLoop(self):
+        while self.player.hp > 0:
+            self.NeutMenu()
 
 
 print("Welcome to a Meatball Adventure! Please enter your meatball's name:")
 name = input()
-player = meatball(name, 5, 20, 2)
+delay(1000)
+player = meatball(name, 5, 20, 3)
 game = MainLoop(player)
 game.start()
+game.mainLoop()
